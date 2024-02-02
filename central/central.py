@@ -52,7 +52,7 @@ async def uart_terminal(args=None):
             with open(args.filename, mode='a') as f:
                 if args.time:
                     f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f, "))
-                f.write(data)
+                f.write(data.decode())
 
         if args.echo:
             print("Rx:", data)
