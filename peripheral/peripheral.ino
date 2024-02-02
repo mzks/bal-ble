@@ -1,5 +1,11 @@
 /*********************************************************************
 This is an example on a peripheral device
+Edit 
+  // --   User should edit here   --
+
+  // -------------------------------
+setup() and loop() functions for your sensors
+
 *********************************************************************/
 
 #include <bluefruit.h>
@@ -12,13 +18,7 @@ BLEDis  bledis;  // device information
 BLEUart bleuart; // uart over ble
 BLEBas  blebas;  // battery
 
-void setup()
-{
-  Serial.begin(115200);
-
-#if CFG_DEBUG
-  while ( !Serial ) yield();
-#endif
+void setup(){
 
   Bluefruit.autoConnLed(true);
   Bluefruit.configPrphBandwidth(BANDWIDTH_MAX);
@@ -39,6 +39,12 @@ void setup()
   blebas.write(100);  // dummy
 
   startAdv();
+  // --   User should edit here   --
+  // write actual sensor setup
+
+
+  // -------------------------------
+
 }
 
 void startAdv(void)
@@ -53,30 +59,43 @@ void startAdv(void)
   Bluefruit.Advertising.start(0);                // 0 = Don't stop advertising after n seconds  
 }
 
-bool data_sending = true;
+
+int sleep_time = 1000;  // unit : ms
+bool data_sending = false;  // default false
 
 void loop()
 {
-  // Forward data from HW Serial to BLEUART
-  while (data_sending)
+  // Send data
+  if (data_sending)
   {
-    // Delay to wait for enough input, since we have a limited transmission buffer
-    delay(2);
-
-    char tx_string[] = "0001,0002,0003,0004,0005\n"
+    // --   User should edit here   --
+    // write actual sensor value(s)
+    char tx_string[] = "0001,0002,0003,0004,0005\n";
+    // -------------------------------
     bleuart.write( tx_string, strlen(tx_string) );
   }
 
-  // Forward from BLEUART to HW Serial
+
+  // Recieve commands
+  String command = "";
   while ( bleuart.available() )
   {
     uint8_t ch;
     ch = (uint8_t) bleuart.read();
-    if (ch == "stop")
-        data_sending = false;
-    if (ch == "start")
-        data_sending = true;
+    command += (char)ch;
   }
+
+  // --   User should edit here   --
+  // define your command here
+  if (command == "stop\n") data_sending = false;
+  if (command == "start\n") data_sending = true;
+  if (command == "fast\n") sleep_time = 1000;
+  if (command == "slow\n") sleep_time = 10000;
+
+
+  // -------------------------------
+
+  delay(sleep_time);
 }
 
 // callback invoked when central connects
@@ -88,15 +107,10 @@ void connect_callback(uint16_t conn_handle)
   char central_name[32] = { 0 };
   connection->getPeerName(central_name, sizeof(central_name));
 
-  Serial.print("Connected to ");
-  Serial.println(central_name);
 }
 
 void disconnect_callback(uint16_t conn_handle, uint8_t reason)
 {
   (void) conn_handle;
   (void) reason;
-
-  Serial.println();
-  Serial.print("Disconnected, reason = 0x"); Serial.println(reason, HEX);
 }
